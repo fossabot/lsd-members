@@ -1,6 +1,9 @@
 import {Headers, Http, RequestOptions, Response} from '@angular/http';
 import {Observable} from 'rxjs/Observable';
 import {ErrorObservable} from 'rxjs/observable/ErrorObservable';
+import {environment} from '../../../environments/environment';
+import {JwtService} from '../login/jwt.service';
+import {Inject, InjectionToken} from '@angular/core';
 
 /**
  * Basic methods shared across services.
@@ -8,9 +11,13 @@ import {ErrorObservable} from 'rxjs/observable/ErrorObservable';
 export class BaseService {
 
   http: Http;
+  jwtService: JwtService;
+  appVersion: string;
 
-  constructor(http: Http) {
+  constructor(http: Http, jwtService: JwtService, @Inject(APP_VERSION) appVersion: string) {
     this.http = http;
+    this.jwtService = jwtService;
+    this.appVersion = appVersion;
   }
 
   /**
@@ -56,11 +63,8 @@ export class BaseService {
    */
   protected post(url: string, data: any) {
     const body = JSON.stringify(data);
-    // const headers = new Headers({'Content-Type': 'application/json', 'Api-Key': this.apiKeyService.getKey()});
-    const headers = new Headers({'Content-Type': 'application/json'});
-    const options = new RequestOptions({headers: headers});
 
-    return this.http.post(url, body, options);
+    return this.http.post(url, body, this.makeRequestOptions());
   }
 
   /**
@@ -74,11 +78,8 @@ export class BaseService {
    */
   protected put(url: string, data: any) {
     const body = JSON.stringify(data);
-    // const headers = new Headers({'Content-Type': 'application/json', 'Api-Key': this.apiKeyService.getKey()});
-    const headers = new Headers({'Content-Type': 'application/json'});
-    const options = new RequestOptions({headers: headers});
 
-    return this.http.put(url, body, options);
+    return this.http.put(url, body, this.makeRequestOptions());
   }
 
   /**
@@ -88,11 +89,16 @@ export class BaseService {
    * @returns {Observable<Response>}
    */
   protected get(url: string) {
-    // const headers = new Headers({'Content-Type': 'application/json', 'Api-Key': this.apiKeyService.getKey()});
-    const headers = new Headers({'Content-Type': 'application/json'});
-    const options = new RequestOptions({headers: headers});
+    return this.http.get(url, this.makeRequestOptions());
+  }
 
-    return this.http.get(url, options);
+  private makeRequestOptions(): RequestOptions {
+    const headers = new Headers({
+      'Content-Type': 'application/json',
+      'X-Frontend-Version': environment.version
+    });
+
+    return new RequestOptions({headers});
   }
 
 }

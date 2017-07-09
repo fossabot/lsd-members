@@ -21,7 +21,7 @@ export class CommitteeStatsServiceImpl extends CommitteeStatsService {
   }
 
   getNumReceivedMessages(): Observable<number> {
-    const headers = new Headers({'X-JWT': this.jwtService.getJwt()});
+    const headers = new Headers({1});
 
     return this.http.get(this.numReceivedUrl, {headers})
       .map(r => r.json() as NumReceivedMessages)
