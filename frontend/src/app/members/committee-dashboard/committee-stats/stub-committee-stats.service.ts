@@ -4,6 +4,10 @@ import {Subject} from 'rxjs/Subject';
 
 export class StubCommitteeStatsService extends CommitteeStatsService {
 
+  constructor() {
+    super(null, null, null);
+  }
+
   numReceived: Subject<number> = new Subject<number>();
 
   getNumReceivedMessages(): Observable<number> {

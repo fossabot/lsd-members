@@ -1,9 +1,9 @@
 import {Headers, Http, RequestOptions, Response} from '@angular/http';
 import {Observable} from 'rxjs/Observable';
 import {ErrorObservable} from 'rxjs/observable/ErrorObservable';
-import {environment} from '../../../environments/environment';
 import {JwtService} from '../login/jwt.service';
-import {Inject, InjectionToken} from '@angular/core';
+import {Inject, Injectable, InjectionToken} from '@angular/core';
+import {APP_VERSION} from '../../app.module';
 
 /**
  * Basic methods shared across services.
@@ -14,7 +14,7 @@ export class BaseService {
   jwtService: JwtService;
   appVersion: string;
 
-  constructor(http: Http, jwtService: JwtService, @Inject(APP_VERSION) appVersion: string) {
+  constructor(http: Http, jwtService: JwtService, appVersion: string) {
     this.http = http;
     this.jwtService = jwtService;
     this.appVersion = appVersion;
@@ -34,23 +34,13 @@ export class BaseService {
   /**
    * Handle a generic error encountered when performing an AJAX request.
    */
-  protected handleError<R, T>() {
-    // We use a closure here to ensure that the reference to this.apiKeyService isn't lost when this error handler is used
-    // const apiKeyService = this.apiKeyService;
+  protected handleError = (response: Response): Response => {
+    if (response.status === 401) {
+      this.jwtService.setJwt('', false);
+    }
 
-    const innerHandler = <R, T>(err: any, caught: Observable<T>): ErrorObservable => {
-      const errMsg = (err.message) ? err.message : err.status ? `${err.status} - ${err.statusText}` : 'Server error';
-      console.error(errMsg);
-
-      if (err.status && err.status === 401) {
-        // apiKeyService.setKey('');
-      }
-
-      return Observable.throw(new Error(errMsg));
-    };
-
-    return innerHandler;
-  }
+    return response;
+  };
 
   /**
    * Build a post request to the given URL with the given data (serialized as JSON).
@@ -64,7 +54,8 @@ export class BaseService {
   protected post(url: string, data: any) {
     const body = JSON.stringify(data);
 
-    return this.http.post(url, body, this.makeRequestOptions());
+    return this.http.post(url, body, this.makeRequestOptions())
+      .map(r => this.handleError(r));
   }
 
   /**
@@ -79,7 +70,8 @@ export class BaseService {
   protected put(url: string, data: any) {
     const body = JSON.stringify(data);
 
-    return this.http.put(url, body, this.makeRequestOptions());
+    return this.http.put(url, body, this.makeRequestOptions())
+      .map(r => this.handleError(r));
   }
 
   /**
@@ -89,13 +81,15 @@ export class BaseService {
    * @returns {Observable<Response>}
    */
   protected get(url: string) {
-    return this.http.get(url, this.makeRequestOptions());
+    return this.http.get(url, this.makeRequestOptions())
+      .map(r => this.handleError(r));
   }
 
   private makeRequestOptions(): RequestOptions {
     const headers = new Headers({
       'Content-Type': 'application/json',
-      'X-Frontend-Version': environment.version
+      'X-App-Version': this.appVersion,
+      'X-JWT': this.jwtService.getJwt()
     });
 
     return new RequestOptions({headers});
